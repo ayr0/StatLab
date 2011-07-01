@@ -40,4 +40,9 @@ class StatLab(object):
         
     def _test_statistics(self, beta_hat, beta):
         return B[bvar,0]/float(covar[bvar,bvar])
+    
+    def matt():
+        """"Matt was here"""
+        pass
+
         
