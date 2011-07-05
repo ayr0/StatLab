@@ -17,6 +17,7 @@ class StatLab(object):
 		self.MSE = self.SSE/(self.ndim - self.Xdim)
 		self.variance = la.inv(self.MSE*X.T.dot(X))
 		self.hypothesis = sp.zeros(self.Xdim)
+		self.alpha = 0.5
 	
 	def test_stats(self):
 		tstats = sp.zeros(self.Xdim)
@@ -24,14 +25,14 @@ class StatLab(object):
 			tstats[x] = (self.beta_hat[x]-self.hypothesis[x])/(self.MSE*sp.sqrt(self.variance[x,x]))
 		return tstats
 		
-	def dec_rule(self, alpha=0.05):
-		return st.t.ppf(1-alpha/2.0, self.ndim-self.Xdim)
+	def dec_rule(self):
+		return st.t.ppf(1-self.alpha/2.0, self.ndim-self.Xdim)
 		
-	def pvals(self, alpha=0.05):
-		return 2*(1-st.t.cdf(self.test_stats(), self.ndim-self.Xdim))
+	def pvals(self):
+		return 2.0*(1-st.t.cdf(abs(self.test_stats()), self.ndim-self.Xdim))
 		
-	def analyze(self, alpha=0.05):
-		print ""
+	def analyze(self):
+		print "    Alpha: %.3f" % self.alpha
 		print "    Decision rule: %.5f" %self.dec_rule()
 		print "    beta             dev              tstats           pvals"
 		print sp.vstack((self.beta_hat.T,sp.sqrt(sp.diag(self.variance)), self.test_stats(), self.pvals())).T
