@@ -8,8 +8,8 @@ class StatLab(object):
 	def __init__(self, X, Y):
 		self.response = Y
 		self.ivars = X
-		self.Xdim = int(X.shape[1]) #Number of progressors plus one
-		self.ndim = int(X.shape[0]) #Number of trials
+		self.Xdim = X.shape[1] #Number of progressors plus one
+		self.ndim = X.shape[0] #Number of trials
 		self.beta_hat = la.inv(X.T.dot(X)).dot(X.T.dot(Y))
 		self.projection = X.dot(self.beta_hat)
 		self.residuals = Y - self.projection
