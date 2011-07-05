@@ -28,7 +28,7 @@ class StatLab(object):
 		
 		self.tstats = sp.zeros(self.Xdim)
 		for x in range(self.Xdim):
-			self.tstats[x] = (self.beta_hat[x]-self.hypothesis[x])/(self.MSE*sp.sqrt(self.variance[x,x]))
+			self.tstats[x] = (self.beta_hat[x]-self.hypothesis[x])/(self.MSE*sp.math.sqrt(self.variance[x,x]))
 		
 		
 		self.drule=st.t.ppf(1-self.alpha/2.0, self.ndim-self.Xdim)
@@ -44,3 +44,9 @@ class StatLab(object):
 	def plotX(self, n):
 		plt.plot(self.ivars[:,n],self.response,'o')
 		plt.show()
+
+	def confInt(self, n):
+		x = sp.math.sqrt(self.variance[n,n])*self.drule
+		lowBound = self.beta_hat[n] - x
+		upBound = self.beta_hat[n] + x
+		print "The %d%% confidence interval for X%d is from %f.5 to %f.5" %((1-self.alpha)*100, n, lowBound, upBound)
