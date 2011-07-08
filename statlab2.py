@@ -31,10 +31,7 @@ class StatLab(object):
         self.deviation = sp.sqrt(sp.diag(self.variance))
 
         self.hypothesis = sp.zeros(self.Xdim)
-        
-        self.tstats = sp.zeros(self.Xdim)
-        for x in range(self.Xdim):
-            self.tstats[x] = (self.beta_hat[x]-self.hypothesis[x])/(self.MSE*sp.math.sqrt(self.variance[x,x]))
+		self.tstats = sp.diag((self.beta_hat-self.hypothesis)/(self.MSE*self.deviation))
         
         
         self.drule=st.t.ppf(1-self.alpha/2.0, self.ntrials-self.Xdim)
@@ -83,10 +80,7 @@ class StatLab(object):
         print ("\tDecision rule = %.5f" % self.drule)
         print ("\tR**2 adjusted = %.5f" % self.r2a())
 
-        #temporaily set scipy pretty print options
-        #sp.set_printoptions(precision=5, linewidth=sw, suppress=True)
-        
-        print "\tBeta\tDev\tT-stats\tP-vals"
+		print "\n\tBeta\tDev\tT-stats\tP-vals"
         for irow in xrange(self.Xdim):
             if self.vtags.has_key(irow):
                 label = self.vtags[irow][:7]
@@ -94,25 +88,36 @@ class StatLab(object):
                 label = str(irow)
             print "%s\t" % label,"\t".join([("%.5f"%v)[:7] for v in vals[irow,:]])
             
-    
-        #print "    Alpha: %.3f" % self.alpha
-        #print "    Decision rule: %.5f" %self.drule
-        #print "    beta             dev              tstats           pvals"
-        #print 
-        #return 
-        sp.set_printoptions()
-        
     def plotX(self, n):
         plt.plot(self.X[:,n],self.Y,'o')
         plt.show()
 
-    def confInt(self, n):
-        """Calculate the confidence interval"""
+	def confIntParam(self, n):
+		"""Calculate the confidence interval for the nth parameter"""
         x = sp.math.sqrt(self.variance[n,n])*self.drule
         lowBound = self.beta_hat[n] - x
         upBound = self.beta_hat[n] + x
         print "The %d%% confidence interval for X%d is from %f.5 to %f.5" %((1-self.alpha)*100, n, lowBound, upBound)
         
+	def confIntObs(self, x):
+		"""Prints the prediction, confidence interval and prediction interval
+		for a given observation."""
+		self.calc()
+		x = list(x)
+		if len(x) != self.X[0,1:].size:
+			raise ValueError("Incorrect observation size")
+		x.insert(0,1)
+		x = sp.asarray(x)
+		pred = x.dot(self.beta_hat)
+		thing = self.MSE*sp.math.sqrt(x.dot(self.variance.dot(x.T)))
+		thing1 = self.MSE*sp.math.sqrt(x.dot(self.variance.dot(x.T))+1)
+		tdist = st.t.ppf(1-self.alpha, self.ntrials-self.Xdim)
+		print "The prediction is %.5f" %pred
+		print "[Confidence] The %d%% confidence interval is from %.5f to %.5f" \
+			%(100-self.alpha*100,pred-thing*tdist,pred+thing*tdist)
+		print "[Prediction] The %d%% prediction interval is from %.5f to %.5f" \
+			%(100-self.alpha*100,pred-thing1*tdist,pred+thing1*tdist)
+	
     def fitVsRes(self):
         """Plot fitted values vs. residuals"""
         fitted = self.X.dot(self.beta_hat)
