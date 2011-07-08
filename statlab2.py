@@ -9,6 +9,7 @@ class StatLab(object):
         self.Y = Y
         self.X = X
         self.alpha = alpha
+        self.weights = sp.eye(X.shape[0])
 
         #first column is always intercept
         self.vtags = {0:'intercept'}
@@ -20,7 +21,7 @@ class StatLab(object):
         self.ntrials = self.X.shape[0] #Number of trials
         self.Ymean = self.Y.sum()/float(self.ntrials)
         
-        self.beta_hat = la.inv(self.X.T.dot(self.X)).dot(self.X.T.dot(self.Y))
+        self.beta_hat = la.inv(self.X.T.dot(self.weights.dot(self.X))).dot(self.X.T.dot(self.weights.dot(self.Y)))
         self._projection = self.X.dot(self.beta_hat)
         self._residuals = self.Y - self._projection
 
@@ -31,7 +32,7 @@ class StatLab(object):
         self.deviation = sp.sqrt(sp.diag(self.variance))
 
         self.hypothesis = sp.zeros(self.Xdim)
-		self.tstats = sp.diag((self.beta_hat-self.hypothesis)/(self.MSE*self.deviation))
+        self.tstats = sp.diag((self.beta_hat-self.hypothesis)/(self.MSE*self.deviation))
         
         
         self.drule=st.t.ppf(1-self.alpha/2.0, self.ntrials-self.Xdim)
@@ -80,7 +81,7 @@ class StatLab(object):
         print ("\tDecision rule = %.5f" % self.drule)
         print ("\tR**2 adjusted = %.5f" % self.r2a())
 
-		print "\n\tBeta\tDev\tT-stats\tP-vals"
+        print "\n\tBeta\tDev\tT-stats\tP-vals"
         for irow in xrange(self.Xdim):
             if self.vtags.has_key(irow):
                 label = self.vtags[irow][:7]
@@ -92,32 +93,32 @@ class StatLab(object):
         plt.plot(self.X[:,n],self.Y,'o')
         plt.show()
 
-	def confIntParam(self, n):
-		"""Calculate the confidence interval for the nth parameter"""
+    def confIntParam(self, n):
+        """Calculate the confidence interval for the nth parameter"""
         x = sp.math.sqrt(self.variance[n,n])*self.drule
         lowBound = self.beta_hat[n] - x
         upBound = self.beta_hat[n] + x
         print "The %d%% confidence interval for X%d is from %f.5 to %f.5" %((1-self.alpha)*100, n, lowBound, upBound)
         
-	def confIntObs(self, x):
-		"""Prints the prediction, confidence interval and prediction interval
-		for a given observation."""
-		self.calc()
-		x = list(x)
-		if len(x) != self.X[0,1:].size:
-			raise ValueError("Incorrect observation size")
-		x.insert(0,1)
-		x = sp.asarray(x)
-		pred = x.dot(self.beta_hat)
-		thing = self.MSE*sp.math.sqrt(x.dot(self.variance.dot(x.T)))
-		thing1 = self.MSE*sp.math.sqrt(x.dot(self.variance.dot(x.T))+1)
-		tdist = st.t.ppf(1-self.alpha, self.ntrials-self.Xdim)
-		print "The prediction is %.5f" %pred
-		print "[Confidence] The %d%% confidence interval is from %.5f to %.5f" \
-			%(100-self.alpha*100,pred-thing*tdist,pred+thing*tdist)
-		print "[Prediction] The %d%% prediction interval is from %.5f to %.5f" \
-			%(100-self.alpha*100,pred-thing1*tdist,pred+thing1*tdist)
-	
+    def confIntObs(self, x):
+        """Prints the prediction, confidence interval and prediction interval
+        for a given observation."""
+        self.calc()
+        x = list(x)
+        if len(x) != self.X[0,1:].size:
+            raise ValueError("Incorrect observation size")
+        x.insert(0,1)
+        x = sp.asarray(x)
+        pred = x.dot(self.beta_hat)
+        thing = self.MSE*sp.math.sqrt(x.dot(self.variance.dot(x.T)))
+        thing1 = self.MSE*sp.math.sqrt(x.dot(self.variance.dot(x.T))+1)
+        tdist = st.t.ppf(1-self.alpha, self.ntrials-self.Xdim)
+        print "The prediction is %.5f" %pred
+        print "[Confidence] The %d%% confidence interval is from %.5f to %.5f" \
+            %(100-self.alpha*100,pred-thing*tdist,pred+thing*tdist)
+        print "[Prediction] The %d%% prediction interval is from %.5f to %.5f" \
+            %(100-self.alpha*100,pred-thing1*tdist,pred+thing1*tdist)
+    
     def fitVsRes(self):
         """Plot fitted values vs. residuals"""
         fitted = self.X.dot(self.beta_hat)
@@ -132,17 +133,15 @@ class StatLab(object):
     def QQ(self):
         raise NotImplementedError("This ain't implemented yet!")
     
-    def IWLS(self, niter=50):
+    def IWLS(self, niter=100):
         """Perform Iterative Weighted Least Squares"""
-        
-        def wbeta_hat(W):
-            return la.inv(self.X.T.dot(W.dot(self.X))).dot(self.X.T.dot(W.dot(self.Y)))
-
-        vi0 = 1.0/self._residuals**2
-        W0 = sp.diag(vi)
-        for i in xrange(50):
-            pass
-            
+        test = sp.zeros(self.weights.shape)
+        while not sp.allclose(test,self.weights) and niter > 0:
+            test = self.weights.copy()
+            self.weights = sp.diag((1.0/self._residuals**2).flatten())
+            self.weights[~sp.isfinite(self.weights)]=0
+            self.calc()
+            niter -= 1
         
     
     def r2a(self):
