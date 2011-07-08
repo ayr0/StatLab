@@ -79,9 +79,9 @@ class StatLab(object):
         
         
         print "Analyze".center(sw, "=")
-        print ("\tAlpha = %.3f" % self.alpha).ljust(sw),
-        print ("\tDecision rule = %.5f" % self.drule).ljust(sw),
-        print ("\tR**2 adjusted = %.5f" % self.r2a()).ljust(sw),
+        print ("\tAlpha = %.3f" % self.alpha)
+        print ("\tDecision rule = %.5f" % self.drule)
+        print ("\tR**2 adjusted = %.5f" % self.r2a())
 
         #temporaily set scipy pretty print options
         #sp.set_printoptions(precision=5, linewidth=sw, suppress=True)
