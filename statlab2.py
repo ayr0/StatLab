@@ -96,10 +96,13 @@ class StatLab(object):
     def stepwise_regr(self, dir='b'):
         """Perform stepwise regression on the data set"""
 
-        the_vars = range(self.Xdim)
-        changes = self._backStepWise()
+        if dir == 'b':
+            #Perform backward stepwise regression
+            the_vars = range(self.Xdim)
+            changes = self._backStepWise()
         
-        rm_vars = [the_vars.pop(x) for x in changes if x is not None]
-        return the_vars, rm_vars
-                    
-        
+            rm_vars = [the_vars.pop(x) for x in changes if x is not None]
+            return the_vars, rm_vars
+        elif dir == 'f':
+            #Perform forward stepwise regression
+            raise NotImplementedError("This ain't implemented yet!")
