@@ -36,6 +36,19 @@ class StatLab(object):
         self.drule=st.t.ppf(1-self.alpha/2.0, self.ntrials-self.Xdim)
         self.pvals = 2.0*(1-st.t.cdf(abs(self.tstats), self.ntrials-self.Xdim))
     
+    def pickle_dump(self, filename):
+        """Dump everything to a file"""
+        from pickle import dump
+        with open(filename, "w") as f:
+            dump(self, f)
+            
+    def pickle_load(self, filename):
+        """Read a pickled StatLab object"""
+        from pickle import load
+        with open(filename, 'r') as f:
+            a = load(f)
+        return f
+        
     def analyze(self):
         print "    Alpha: %.3f" % self.alpha
         print "    Decision rule: %.5f" %self.drule
@@ -48,17 +61,20 @@ class StatLab(object):
         plt.show()
 
     def confInt(self, n):
+        """Calculate the confidence interval"""
         x = sp.math.sqrt(self.variance[n,n])*self.drule
         lowBound = self.beta_hat[n] - x
         upBound = self.beta_hat[n] + x
         print "The %d%% confidence interval for X%d is from %f.5 to %f.5" %((1-self.alpha)*100, n, lowBound, upBound)
         
     def fitVsRes(self):
+        """Plot fitted values vs. residuals"""
         fitted = self.X.dot(self.beta_hat)
         plt.plot(fitted,self._residuals,'o')
         plt.show()
         
     def histRes(self):
+        """Plot histogram of residuals"""
         plt.hist(self._residuals)
         plt.show()
     
@@ -102,6 +118,8 @@ class StatLab(object):
             changes = self._backStepWise()
         
             rm_vars = [the_vars.pop(x) for x in changes if x is not None]
+            self.the_vars = the_vars
+            self.rm_vars = rm_vars
             return the_vars, rm_vars
         elif dir == 'f':
             #Perform forward stepwise regression
