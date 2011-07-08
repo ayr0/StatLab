@@ -9,10 +9,13 @@ class StatLab(object):
         self.Y = Y
         self.X = X
         self.alpha = alpha
+
+        #first column is always intercept
+        self.vtags = {0:'intercept'}
         
         self.calc()
         
-    def calc(self):		
+    def calc(self):     
         self.Xdim = self.X.shape[1] #Number of progressors plus one
         self.ntrials = self.X.shape[0] #Number of trials
         self.Ymean = self.Y.sum()/float(self.ntrials)
@@ -25,6 +28,7 @@ class StatLab(object):
         self.MSE = self.SSE/(self.ntrials - self.Xdim)
 
         self.variance = la.inv(self.MSE*self.X.T.dot(self.X))
+        self.deviation = sp.sqrt(sp.diag(self.variance))
 
         self.hypothesis = sp.zeros(self.Xdim)
         
@@ -35,7 +39,25 @@ class StatLab(object):
         
         self.drule=st.t.ppf(1-self.alpha/2.0, self.ntrials-self.Xdim)
         self.pvals = 2.0*(1-st.t.cdf(abs(self.tstats), self.ntrials-self.Xdim))
-    
+
+    def tag(self, label, index=None):
+        """Used to attach a tag to a random variable in X
+        label is expected to be a list of strings,
+        but if index is specified, it only has to be string"""
+
+        if isinstance(label, (tuple, list)):
+            #we have  a list
+            for ind in xrange(len(label)):
+                self.vtags[ind+1]=label[ind]
+
+        elif isinstance(label, str):
+            if index is None:
+                raise IndexError("a variable index must be specified")
+            else:
+                #we have a string
+                self.vtags[index]=label
+                self.vtags
+            
     def pickle_dump(self, filename):
         """Dump everything to a file"""
         from pickle import dump
@@ -49,12 +71,36 @@ class StatLab(object):
             a = load(f)
         return f
         
-    def analyze(self):
-        print "    Alpha: %.3f" % self.alpha
-        print "    Decision rule: %.5f" %self.drule
-        print "    beta             dev              tstats           pvals"
-        print sp.vstack((self.beta_hat.T,sp.sqrt(sp.diag(self.variance)), self.tstats, self.pvals)).T
-        return 
+    def analyze(self, sw=100):
+        #Recalculate everything
+        self.calc()
+
+        vals = sp.vstack((self.beta_hat.T,self.deviation, self.tstats, self.pvals)).T
+        
+        
+        print "Analyze".center(sw, "=")
+        print ("\tAlpha = %.3f" % self.alpha).ljust(sw),
+        print ("\tDecision rule = %.5f" % self.drule).ljust(sw),
+        print ("\tR**2 adjusted = %.5f" % self.r2a()).ljust(sw),
+
+        #temporaily set scipy pretty print options
+        #sp.set_printoptions(precision=5, linewidth=sw, suppress=True)
+        
+        print "\tBeta\tDev\tT-stats\tP-vals"
+        for irow in xrange(self.Xdim):
+            if self.vtags.has_key(irow):
+                label = self.vtags[irow][:7]
+            else:
+                label = str(irow)
+            print "%s\t" % label,"\t".join([("%.5f"%v)[:7] for v in vals[irow,:]])
+            
+    
+        #print "    Alpha: %.3f" % self.alpha
+        #print "    Decision rule: %.5f" %self.drule
+        #print "    beta             dev              tstats           pvals"
+        #print 
+        #return 
+        sp.set_printoptions()
         
     def plotX(self, n):
         plt.plot(self.X[:,n],self.Y,'o')
@@ -79,7 +125,20 @@ class StatLab(object):
         plt.show()
     
     def QQ(self):
-        pass
+        raise NotImplementedError("This ain't implemented yet!")
+    
+    def IWLS(self, niter=50):
+        """Perform Iterative Weighted Least Squares"""
+        
+        def wbeta_hat(W):
+            return la.inv(self.X.T.dot(W.dot(self.X))).dot(self.X.T.dot(W.dot(self.Y)))
+
+        vi0 = 1.0/self._residuals**2
+        W0 = sp.diag(vi)
+        for i in xrange(50):
+            pass
+            
+        
     
     def r2a(self):
         sum1 = sp.sum((self.Y - self._projection)**2)
