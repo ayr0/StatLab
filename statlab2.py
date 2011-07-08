@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 
 class StatLab(object):
 
-    def __init__(self, X, Y):
+    def __init__(self, X, Y, alpha=0.05):
         self.Y = Y
         self.X = X
-        self.alpha = 0.05
+        self.alpha = alpha
         
         self.calc()
         
