@@ -76,7 +76,7 @@ class StatLab(object):
         vals = sp.vstack((self.beta_hat.T,self.deviation, self.tstats, self.pvals)).T
         
         
-        print "Analyze".center(sw, "=")
+        #print "Analyze".center(sw, "=")
         print ("\tAlpha = %.3f" % self.alpha)
         print ("\tDecision rule = %.5f" % self.drule)
         print ("\tR**2 adjusted = %.5f" % self.r2a())
@@ -171,6 +171,39 @@ class StatLab(object):
             return ichanges
         else:
             return [None]
+            
+    def _center_scale(self, X):
+        mu = sp.mean(X, axis=0)
+        sig = sp.std(X, axis=0)
+        
+        Xscaled = X.copy()
+        for i in xrange(X.shape[1]):
+            Xscaled[:,i] = Xscaled[:,i]-mu[i]
+            Xscaled[:,i] = Xscaled[:,i]/sig[i]
+            
+        return Xscaled
+        
+    def _std_svd(self, X=None):
+        if X is None:
+            X = self.X[:,1:]
+        Xscaled = self._center_scale(X)
+        U, S, Vh = la.svd(Xscaled)
+        
+        return U, S, Vh.conj().T, Xscaled 
+        
+    def pca_regr(self, remainder, thres=.8):
+        """Perform principal component regression on X"""
+        u,s,v,xscaled = self._std_svd()
+        lmda = s**2
+        
+        n=self.ntrials
+        csum = [sum(lmda[:i+1])/sum(lmda) for i in xrange(n)]
+        goodpc =  sum(sp.array(csum)<thres)+1
+        
+        regr = sum((1.0/lmda[i])*sp.dot(sp.dot(v[i],v[i]), xscaled.T.dot(self.Y)) for i in range(remainder))
+        self.pca_beta_hat = regr
+        
+        return regr, lmda, csum, goodpc
 
     def stepwise_regr(self, dir='b'):
         """Perform stepwise regression on the data set"""
