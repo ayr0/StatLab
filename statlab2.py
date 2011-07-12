@@ -191,19 +191,26 @@ class StatLab(object):
         
         return U, S, Vh.conj().T, Xscaled 
         
-    def pca_regr(self, remainder, thres=.8):
+    def pca_analyze(self, keep=None, thres=.8):
         """Perform principal component regression on X"""
         u,s,v,xscaled = self._std_svd()
         lmda = s**2
         
-        n=self.ntrials
+        n=xscaled.shape[1]
         csum = [sum(lmda[:i+1])/sum(lmda) for i in xrange(n)]
-        goodpc =  sum(sp.array(csum)<thres)+1
         
-        regr = sum((1.0/lmda[i])*sp.dot(sp.dot(v[i],v[i]), xscaled.T.dot(self.Y)) for i in range(remainder))
-        self.pca_beta_hat = regr
         
-        return regr, lmda, csum, goodpc
+        if keep is not None:
+            goodpc = keep
+        else:
+            goodpc =  sum(sp.array(csum)<thres)+1 
+        
+        return lmda, csum, v.T[0:,0:goodpc], xscaled
+        
+    def pca_regr(self, keep=-1):
+        lmda, csum, pca_c, xscaled = self.pca_analyze(keep=keep)
+        xscaledy = sp.dot(xscaled.T, self.Y)
+        self.pca_beta_hat = sp.sum([(1.0/lmda[i])*sp.dot(sp.outer(pca_c[:,i],pca_c[:,i]), xscaledy) for i in range(pca_c.shape[1])], axis=1)
 
     def stepwise_regr(self, dir='b'):
         """Perform stepwise regression on the data set"""
