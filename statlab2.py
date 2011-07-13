@@ -205,12 +205,12 @@ class StatLab(object):
         else:
             goodpc =  sum(sp.array(csum)<thres)+1 
         
-        return lmda, csum, v.T[0:,0:goodpc], xscaled
+        return lmda, csum, v[0:,0:goodpc], xscaled
         
     def pca_regr(self, keep=-1):
         lmda, csum, pca_c, xscaled = self.pca_analyze(keep=keep)
         xscaledy = sp.dot(xscaled.T, self.Y)
-        self.pca_beta_hat = sp.sum([(1.0/lmda[i])*sp.dot(sp.outer(pca_c[:,i],pca_c[:,i]), xscaledy) for i in range(pca_c.shape[1])], axis=1)
+        self.pca_beta_hat = sp.sum([(1.0/lmda[i])*sp.dot(sp.outer(pca_c[:,i],pca_c[:,i]), xscaledy) for i in range(pca_c.shape[1])], axis=0)
 
     def stepwise_regr(self, dir='b'):
         """Perform stepwise regression on the data set"""
