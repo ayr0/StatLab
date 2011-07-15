@@ -18,7 +18,8 @@ class StatLab(object):
         self.X = X
         self.alpha = alpha
         self.weights = sp.eye(X.shape[0])
-
+        self.addweights = sp.zeros(X.shape[0])
+        
         #first column is always intercept
         self.vtags = {0:'intercept'}
         
@@ -29,7 +30,7 @@ class StatLab(object):
         self.ntrials = self.X.shape[0] #Number of trials
         self.Ymean = self.Y.sum()/float(self.ntrials)
         
-        self.beta_hat = la.inv(self.X.T.dot(self.weights.dot(self.X))).dot(self.X.T.dot(self.weights.dot(self.Y)))
+        self.beta_hat = la.inv(self.X.T.dot(self.weights.dot(self.X))+self.addweights).dot(self.X.T.dot(self.weights.dot(self.Y)))
         self._projection = self.X.dot(self.beta_hat)
         self._residuals = self.Y - self._projection
 
@@ -229,3 +230,47 @@ class StatLab(object):
         elif dir == 'f':
             #Perform forward stepwise regression
             raise NotImplementedError("This ain't implemented yet!")
+        
+    def _set_ridge_lmbda(self, lmda):
+        """Update Lambda for Ridge regression"""
+        
+        self.addweights = lmda*sp.eye(self.addweights)
+        
+    def sse(self, vec1, vec2):
+        """Calculate the SSE of two vectors"""
+        
+        tmp = vec1-vec2
+        return (tmp).T.dot(tmp)
+        
+    def ridge_regr(self, mask=.8, nlambdas=100):
+        """Perform ridge regression"""
+        
+        mask = sp.rand(self.ntrials)<mask
+        k = self.Xdim-1
+        
+        #Mask the X
+        Xm, Xnm = self.X[mask], self.X[~mask]
+        Ym, Ynm = self.Y[mask], self.Y[~mask]
+        
+        maskedModel = StatLab(Xm, Ym)
+        
+        lm_space = sp.linspace(0.0,k,100)
+        
+        best_lmbda = 0
+        best_sse = 0
+        for lmbda in lm_space:
+            #set new lambda
+            maskedModel._set_ridge_lmbda(lmbda)
+            maskedModel.calc()
+            
+            fittedY = sp.dot(Xnm, maskedModel.beta_hat)
+            
+            #SSE of 
+            sse_result = self.sse(fittedY, Ynm)
+            
+            if best_sse >= sse_result:
+                best_sse=sse_result
+                best_lmbda=lmbda
+            
+        self._set_ridge_lmbda(best_lmbda)
+       
