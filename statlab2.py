@@ -285,14 +285,14 @@ class StatLab(object):
         lm_space = sp.linspace(0.0,k,nlambdas)
         
         n=float(self.ntrials)
-        I = sp.eye(self.addweights[0])
+        I = sp.eye(self.addweights.shape[0])
         
         best_lmbda=0
         best_gcv=None
         for lmbda in lm_space:
-            H = self.X.dot(self.X.T.dot(X)+(I*lmbda)).dot(X.T)
+            H = self.X.dot(self.X.T.dot(self.X)+(I*lmbda)).dot(self.X.T)
             y_hat = H.dot(self.Y)
-            GCV = self.see(self.Y, y_hat)/(n*(1-H.trace()/n))**2
+            GCV = self.sse(self.Y, y_hat)/(n*(1-H.trace()/n))**2
             
             if best_gcv is None:
                 best_gcv = GCV
