@@ -3,6 +3,14 @@ import scipy as sp
 import scipy.linalg as la
 import matplotlib.pyplot as plt
 
+def pickle_load(filename):
+    """Read a pickled StatLab object"""
+    from pickle import load
+    with open(filename, 'r') as f:
+        a = load(f)
+    return f
+
+
 class StatLab(object):
 
     def __init__(self, X, Y, alpha=0.05):
@@ -62,12 +70,6 @@ class StatLab(object):
         with open(filename, "w") as f:
             dump(self, f)
             
-    def pickle_load(self, filename):
-        """Read a pickled StatLab object"""
-        from pickle import load
-        with open(filename, 'r') as f:
-            a = load(f)
-        return f
         
     def analyze(self, sw=100):
         #Recalculate everything
