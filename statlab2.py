@@ -290,17 +290,16 @@ class StatLab(object):
         best_lmbda=0
         best_gcv=None
         for lmbda in lm_space:
-            H = self.X.dot(self.X.T.dot(self.X)+(I*lmbda)).dot(self.X.T)
+            H = self.X.dot(la.inv(self.X.T.dot(self.X)+(I*lmbda))).dot(self.X.T)
             y_hat = H.dot(self.Y)
-            GCV = self.sse(self.Y, y_hat)/(n*(1-H.trace()/n))**2
+            GCV = self.sse(self.Y, y_hat)/(n*((1.0-H.trace()/n))**2.0)
+            
             
             if best_gcv is None:
                 best_gcv = GCV
             elif best_gcv >= GCV:
+                print "Best GCV: %d \t New GCV: %d" % (best_gcv, GCV)
                 best_gcv = GCV
                 best_lmbda = lmbda
                 
         self._set_ridge_lmbda(best_lmbda)
-            
-            
-            
