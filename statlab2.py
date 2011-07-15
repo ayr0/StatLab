@@ -18,7 +18,7 @@ class StatLab(object):
         self.X = X
         self.alpha = alpha
         self.weights = sp.eye(X.shape[0])
-        self.addweights = sp.zeros(X.shape[0])
+        self.addweights = sp.zeros((X.shape[1],X.shape[1]))
         
         #first column is always intercept
         self.vtags = {0:'intercept'}
@@ -29,6 +29,7 @@ class StatLab(object):
         self.Xdim = self.X.shape[1] #Number of progressors plus one
         self.ntrials = self.X.shape[0] #Number of trials
         self.Ymean = self.Y.sum()/float(self.ntrials)
+        
         
         self.beta_hat = la.inv(self.X.T.dot(self.weights.dot(self.X))+self.addweights).dot(self.X.T.dot(self.weights.dot(self.Y)))
         self._projection = self.X.dot(self.beta_hat)
@@ -234,7 +235,8 @@ class StatLab(object):
     def _set_ridge_lmbda(self, lmda):
         """Update Lambda for Ridge regression"""
         
-        self.addweights = lmda*sp.eye(self.addweights)
+        self.addweights = lmda*sp.eye(self.addweights.shape[0])
+        self.calc()
         
     def sse(self, vec1, vec2):
         """Calculate the SSE of two vectors"""
@@ -254,10 +256,10 @@ class StatLab(object):
         
         maskedModel = StatLab(Xm, Ym)
         
-        lm_space = sp.linspace(0.0,k,100)
+        lm_space = sp.linspace(0.0,k,nlambdas)
         
-        best_lmbda = 0
-        best_sse = 0
+        best_lmbda = self.addweights[0,0]
+        best_sse = None
         for lmbda in lm_space:
             #set new lambda
             maskedModel._set_ridge_lmbda(lmbda)
@@ -268,9 +270,37 @@ class StatLab(object):
             #SSE of 
             sse_result = self.sse(fittedY, Ynm)
             
-            if best_sse >= sse_result:
+            if best_sse is None:
+                best_sse = sse_result
+            elif best_sse >= sse_result:
                 best_sse=sse_result
                 best_lmbda=lmbda
-            
+        
         self._set_ridge_lmbda(best_lmbda)
-       
+        
+    def small_ridge_regr(self, nlambdas=100):
+        """Perform ridge regression on small datasets"""
+        
+        k = self.Xdim-1
+        lm_space = sp.linspace(0.0,k,nlambdas)
+        
+        n=float(self.ntrials)
+        I = sp.eye(self.addweights[0])
+        
+        best_lmbda=0
+        best_gcv=None
+        for lmbda in lm_space:
+            H = self.X.dot(self.X.T.dot(X)+(I*lmbda)).dot(X.T)
+            y_hat = H.dot(self.Y)
+            GCV = self.see(self.Y, y_hat)/(n*(1-H.trace()/n))**2
+            
+            if best_gcv is None:
+                best_gcv = GCV
+            elif best_gcv >= GCV:
+                best_gcv = GCV
+                best_lmbda = lmbda
+                
+        self._set_ridge_lmbda(best_lmbda)
+            
+            
+            
